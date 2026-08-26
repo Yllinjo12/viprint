@@ -49,7 +49,7 @@ function animateCounters() {
 
 // Reveal-on-scroll animation
 function initReveal() {
-  const targets = document.querySelectorAll('.about-card, .product-card, .service, .fact, .contact-form, .contact-list');
+  const targets = document.querySelectorAll('.about-card, .product-card, .service, .fact, .contact-form, .contact-list, .game-how, .game-wrap');
   const io = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
