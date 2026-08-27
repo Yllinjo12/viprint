@@ -80,7 +80,7 @@ try {
   console.log('FAIL: script init threw:', e.message);
   process.exit(1);
 }
-console.log('OK: script initialized, title =', JSON.stringify(document.title));
+console.log('OK: script initialized without errors');
 
 // run ~10 frames of the game loop (update + draw)
 let frames = 0;

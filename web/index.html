@@ -22,7 +22,7 @@
         <a href="#facts">Facts</a>
         <a href="#products">Products</a>
         <a href="#services">Services</a>
-        <a href="#game">Game</a>
+        <a href="game.html" target="_blank" rel="noopener">Game</a>
         <a href="#contact">Contact</a>
       </nav>
       <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
@@ -210,75 +210,6 @@
     </div>
   </section>
 
-  <!-- ===== Game ===== -->
-  <section class="section game" id="game">
-    <div class="container">
-      <div class="section-head">
-        <p class="section-tag">Game</p>
-        <h2>Viprint Press X9</h2>
-        <p>
-          Meet the Viprint Press X9 — a high-end industrial printing machine with a paper
-          roll, CMYK ink cartridges and multiple paper trays. Press the big glowing button to
-          print sheets, earn money, and upgrade your machine into a print powerhouse!
-        </p>
-      </div>
-
-      <div class="game-how">
-        <h3>🎮 How to play</h3>
-        <ol>
-          <li><strong>Press the big glowing button</strong> to print a sheet — every sheet earns money.</li>
-          <li><strong>Upgrade the press</strong> — a new print head prints more per click, an auto-feed roller prints every second.</li>
-          <li><strong>Watch the paper pile up!</strong> Your progress is saved automatically in your browser.</li>
-        </ol>
-      </div>
-
-      <div class="game-wrap clicker">
-        <div class="game-hud">
-          <div class="clicker-score">
-            <span class="clicker-score-label">Money</span>
-            <span class="clicker-score-value" id="clickerMoney">$0</span>
-          </div>
-          <div class="clicker-rates">
-            <div class="hud-item">👆 <span id="clickerPerClick">1</span>/click</div>
-            <div class="hud-item">⚡ <span id="clickerPerSec">0</span>/sec</div>
-          </div>
-          <div class="hud-buttons">
-            <button class="hud-btn" id="gameMute" type="button" aria-label="Toggle sound">🔊</button>
-          </div>
-        </div>
-
-        <div class="clicker-stage">
-          <canvas id="printCanvas" width="460" height="400"
-                  aria-label="Viprint Press — click the big button to print a sheet"></canvas>
-          <div class="clicker-fx" id="clickerFx" aria-hidden="true"></div>
-        </div>
-
-        <div class="upgrades">
-          <h3 class="upgrades-title">Upgrades</h3>
-          <div class="upgrade">
-            <div class="upgrade-info">
-              <span class="upgrade-name">🖨️ New print head</span>
-              <span class="upgrade-level" id="lvlClick">Lv 0</span>
-              <span class="upgrade-desc" id="descClick">+$1 per click</span>
-            </div>
-            <button class="btn btn-dark upgrade-buy" id="buyClick" type="button">Buy — <span id="costClick">50</span></button>
-          </div>
-          <div class="upgrade">
-            <div class="upgrade-info">
-              <span class="upgrade-name">⚙️ Auto-feed roller</span>
-              <span class="upgrade-level" id="lvlAuto">Lv 0</span>
-              <span class="upgrade-desc" id="descAuto">+$1 every second</span>
-            </div>
-            <button class="btn btn-dark upgrade-buy" id="buyAuto" type="button">Buy — <span id="costAuto">100</span></button>
-          </div>
-          <button class="reset-link" id="clickerReset" type="button">Reset progress</button>
-        </div>
-
-        <p class="game-tip">💡 Tip: the auto-feed roller keeps printing while you browse the rest of the site!</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== Contact ===== -->
   <section class="section contact" id="contact">
     <div class="container contact-grid">
@@ -317,6 +248,5 @@
   </footer>
 
   <script src="js/main.js?v=2"></script>
-  <script src="js/game.js?v=13"></script>
 </body>
 </html>

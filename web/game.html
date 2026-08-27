@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viprint Press X9 — Fullscreen Game</title>
+  <style>
+    :root {
+      --red: #d4001f;
+      --red-dark: #a30017;
+      --cyan: #22d3ee;
+      --ink: #0b0d10;
+      --panel: #161a20;
+      --panel-2: #1d222a;
+      --border: #2a3038;
+      --text: #eef1f5;
+      --muted: #98a2ad;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 700px at 50% -10%, #232a33 0%, #14171c 55%, #0b0d10 100%);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* --- top bar --- */
+    .game-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 0.7rem 1.2rem;
+      background: rgba(11, 13, 16, 0.7);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .brand:hover { text-decoration: none; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 9px;
+      font-size: 1.05rem;
+      box-shadow: 0 0 14px rgba(212, 0, 31, 0.45);
+    }
+    .brand small { color: var(--muted); font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 0.9rem; font-size: 0.9rem; }
+
+    /* --- HUD --- */
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.6rem;
+      flex-wrap: wrap;
+      padding: 0.9rem 1.2rem;
+      background: linear-gradient(180deg, rgba(212, 0, 31, 0.16), rgba(212, 0, 31, 0.05));
+      border-bottom: 1px solid var(--border);
+    }
+    .hud-score { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+    .hud-score .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+    .hud-score .value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .hud-item { font-size: 0.95rem; color: var(--muted); font-weight: 700; }
+    .hud-item span { color: var(--text); font-variant-numeric: tabular-nums; }
+    .hud-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: #fff;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .hud-btn:hover { background: #2a313b; }
+
+    /* --- stage (the machine, big and centered) --- */
+    .stage {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 1.2rem 1rem;
+      position: relative;
+    }
+    .canvas-wrap { position: relative; }
+    #printCanvas {
+      display: block;
+      width: min(92vw, calc(100vh - 300px), 860px);
+      cursor: pointer;
+      border-radius: 14px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      background: transparent;
+    }
+    .clicker-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+    .clicker-float {
+      position: absolute;
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: var(--cyan);
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+      animation: floatUp 0.9s ease-out forwards;
+    }
+    .clicker-float.auto { color: #7dd3fc; font-size: 1rem; }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+    }
+
+    /* --- upgrades bar --- */
+    .upgrades-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 1rem 1.2rem;
+      background: rgba(11, 13, 16, 0.7);
+      border-top: 1px solid var(--border);
+    }
+    .upgrade-card {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--red);
+      border-radius: 12px;
+      padding: 0.8rem 1.1rem;
+      min-width: 260px;
+    }
+    .upgrade-info { display: flex; flex-direction: column; }
+    .upgrade-name { font-weight: 800; }
+    .upgrade-level { font-size: 0.72rem; color: var(--muted); }
+    .upgrade-desc { font-size: 0.82rem; color: var(--muted); }
+    .upgrade-buy {
+      margin-left: auto;
+      border: none;
+      cursor: pointer;
+      background: var(--red);
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      font-size: 0.85rem;
+      border-radius: 999px;
+      padding: 0.55rem 1.1rem;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .upgrade-buy:hover { background: var(--red-dark); transform: translateY(-1px); }
+    .upgrade-buy:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .upgrades-foot { display: flex; align-items: center; gap: 1.2rem; }
+    .reset-link {
+      background: none;
+      border: none;
+      color: var(--muted);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .reset-link:hover { color: #fff; }
+    .tip { font-size: 0.85rem; color: var(--muted); max-width: 420px; }
+
+    @media (max-width: 720px) {
+      .upgrades-bar { flex-direction: column; align-items: stretch; }
+      .upgrade-card { min-width: 0; }
+      .upgrades-foot { justify-content: space-between; }
+      #printCanvas { width: 96vw; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="game-topbar">
+    <a class="brand" href="index.html" title="Back to the Viprint website">
+      <span class="brand-mark">V</span>
+      <span>Viprint Press X9 <small>· Fullscreen Game</small></span>
+    </a>
+    <div class="topbar-right">
+      <button class="hud-btn" id="gameMute" type="button" aria-label="Toggle sound">🔊</button>
+      <a href="index.html">← Back to website</a>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-score">
+      <span class="label">Money</span>
+      <span class="value" id="clickerMoney">$0</span>
+    </div>
+    <div class="hud-item">👆 <span id="clickerPerClick">1</span>/click</div>
+    <div class="hud-item">⚡ <span id="clickerPerSec">0</span>/sec</div>
+  </div>
+
+  <main class="stage">
+    <div class="canvas-wrap">
+      <canvas id="printCanvas" width="460" height="400"
+              aria-label="Viprint Press X9 — click the machine to print a sheet"></canvas>
+      <div class="clicker-fx" id="clickerFx" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <footer class="upgrades-bar">
+    <div class="upgrade-card">
+      <div class="upgrade-info">
+        <span class="upgrade-name">🖨️ New print head</span>
+        <span class="upgrade-level" id="lvlClick">Lv 0</span>
+        <span class="upgrade-desc" id="descClick">+$1 per click</span>
+      </div>
+      <button class="upgrade-buy" id="buyClick" type="button">Buy — <span id="costClick">50</span></button>
+    </div>
+    <div class="upgrade-card">
+      <div class="upgrade-info">
+        <span class="upgrade-name">⚙️ Auto-feed roller</span>
+        <span class="upgrade-level" id="lvlAuto">Lv 0</span>
+        <span class="upgrade-desc" id="descAuto">+$1 every second</span>
+      </div>
+      <button class="upgrade-buy" id="buyAuto" type="button">Buy — <span id="costAuto">100</span></button>
+    </div>
+    <div class="upgrades-foot">
+      <button class="reset-link" id="clickerReset" type="button">Reset progress</button>
+      <span class="tip">💡 The auto-feed roller keeps printing while you browse!</span>
+    </div>
+  </footer>
+
+  <script src="js/game.js?v=16"></script>
+</body>
+</html>

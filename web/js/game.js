@@ -1,12 +1,12 @@
 /* ============================================================
-   Viprint Press X9 — high-end industrial printing machine
-   Press the big glowing button to print sheets and earn money.
+   Viprint Press X9 — high-end digital printing press
+   Click the machine to print sheets and earn money.
    Upgrades: new print head (more per click) and auto-feed
    roller (prints every second).
-   The machine is drawn live on canvas: dark gray & white metal
-   body, top paper tray with feed rollers, paper roll window,
-   CMYK ink cartridges, mechanical output rollers, glowing cyan
-   lights, and the big industrial button. No text on the art.
+   The machine is drawn live on canvas: white press body with a
+   lid + handle, top paper input tray, sliding CMYK print-head
+   carriage, paper roll window, ink cartridges, output slot with
+   rollers and a wide catch tray. No text on the art.
    Progress is saved automatically.
    ============================================================ */
 
@@ -39,18 +39,19 @@
   canvas.height = H * DPR;
   ctx.scale(DPR, DPR);
 
-  // --- machine geometry (X9: larger, high-end) ---
+  // --- machine geometry (X9: high-end digital press) ---
   const MX = 12, MY = 6, MW = 436, MH = 330;            // body
-  const SLOT = { x: 186, y: 150, w: 88, h: 16 };        // paper output
+  const SLOT = { x: 200, y: 150, w: 84, h: 16 };        // paper output slot
   const PAPER_W = 84, PAPER_MAX = 100;
-  const RW = { x: 44, y: 116, w: 140, h: 92 };          // paper roll window
-  const ROLL = { cx: 114, cy: 162, R: 44 };
-  const IB = { x: 300, y: 124, w: 132, h: 88 };         // ink bay
-  const TRAY = { x: 44, y: 30, w: 156, h: 34 };         // top input tray
-  // --- big industrial button ---
-  const BTN = { cx: 230, cy: 312, mountR: 84, bezelR: 72, ringR: 62, capR: 52 };
-  const TRAY_OUT = { x: 54, y: 338, w: 126, h: 20 };    // output tray
-  const PILE_BASE = 350;
+  const RW = { x: 44, y: 130, w: 138, h: 88 };          // paper roll window
+  const ROLL = { cx: 113, cy: 174, R: 40 };
+  const IB = { x: 304, y: 130, w: 128, h: 88 };         // CMYK ink bay
+  const TRAY = { x: 44, y: 34, w: 150, h: 30 };         // top input tray
+  const PANEL = { x: 298, y: 30, w: 132, h: 92 };       // control panel
+  const CARRIAGE = { x: 48, y: 74, w: 244, h: 44 };     // print-head window
+  const TRAY_OUT = { x: 62, y: 316, w: 236, h: 18 };    // output catch tray
+  const PILE_BASE = 316;
+  const LAND_Y = 322;                                   // sheets land on the tray
   // --- colorful printed paper ---
   const PAPER_COLORS = ['#d4001f', '#3b82f6', '#facc15', '#22d3ee', '#a855f7', '#22c55e'];
   // --- CMYK ink cartridges ---
@@ -68,7 +69,6 @@
   let feedLv = 0;    // "Auto-feed roller" → sheets per second
   let papers = [];   // {x, prog, state: out|fall, y, vy, vx, rot, vrot}
   let bits = [];     // paper scatter on pile clear
-  let ripples = [];  // expanding press rings
   let pileCount = 0;
   let flash = 0;     // slot glow / LED boost on print
   let pressT = 0;    // button press animation
@@ -175,7 +175,6 @@
     flash = 1;
     pressT = 1;
     rollSpin = 0.06;
-    ripples.push({ r: BTN.ringR, a: 0.85 });
 
     const sr = fxLayer.getBoundingClientRect();
     float(sr.width / 2 - 35 + Math.random() * 70, sr.height * 0.24,
@@ -198,7 +197,7 @@
   function clearPile() {
     for (let i = 0; i < 8; i++) {
       bits.push({
-        x: 62 + Math.random() * 108,
+        x: TRAY_OUT.x + 20 + Math.random() * (TRAY_OUT.w - 40),
         y: PILE_BASE - 4,
         vx: (Math.random() - 0.5) * 3,
         vy: -2 - Math.random() * 2,
@@ -235,7 +234,7 @@
         p.y += p.vy;
         p.x += p.vx;
         p.rot += p.vrot;
-        if (p.y > H + 40) {
+        if (p.y >= LAND_Y) {
           papers.splice(i, 1);
           pileCount += 1;
           if (pileCount >= 25) clearPile();
@@ -250,13 +249,6 @@
       b.y += b.vy;
       b.life -= 1;
       if (b.life <= 0) bits.splice(i, 1);
-    }
-
-    for (let i = ripples.length - 1; i >= 0; i--) {
-      const rp = ripples[i];
-      rp.r += 4.5;
-      rp.a -= 0.04;
-      if (rp.a <= 0) ripples.splice(i, 1);
     }
   }
 
@@ -276,20 +268,16 @@
     ctx.closePath();
   }
 
-  function led(x, y, r, color, bright) {
-    ctx.save();
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 6 + 8 * bright;
+  function led(x, y, r, color) {
+    // plain status dot — no glow, no pulsing
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.beginPath();
     ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.35, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
   }
 
   // --- top input paper tray with feed rollers ---
@@ -324,6 +312,26 @@
       ctx.stroke();
     }
 
+    // paper width guides
+    ctx.fillStyle = '#565c64';
+    ctx.beginPath();
+    ctx.moveTo(TRAY.x + 10, TRAY.y + 6);
+    ctx.lineTo(TRAY.x + 16, TRAY.y + 6);
+    ctx.lineTo(TRAY.x + 13, TRAY.y + 13);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(TRAY.x + 140, TRAY.y + 6);
+    ctx.lineTo(TRAY.x + 134, TRAY.y + 6);
+    ctx.lineTo(TRAY.x + 137, TRAY.y + 13);
+    ctx.closePath();
+    ctx.fill();
+
+    // cassette front lip
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    roundRectPath(TRAY.x + 2, TRAY.y + TRAY.h - 5, TRAY.w - 4, 3, 1.5);
+    ctx.fill();
+
     // feed mouth + two vertical rollers
     ctx.fillStyle = '#0d1115';
     roundRectPath(TRAY.x + TRAY.w - 26, TRAY.y + 5, 20, TRAY.h - 10, 4);
@@ -331,14 +339,10 @@
     drawVRoller(TRAY.x + TRAY.w - 24, TRAY.y + 7, 6, TRAY.h - 14, t);
     drawVRoller(TRAY.x + TRAY.w - 14, TRAY.y + 7, 6, TRAY.h - 14, t + 1.3);
 
-    // cyan LED strip under the tray
-    ctx.save();
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = 'rgba(34,211,238,' + (0.4 + 0.15 * Math.sin(t * 2.2)).toFixed(3) + ')';
+    // plain paper guide strip (no glow)
+    ctx.fillStyle = 'rgba(28,32,38,0.10)';
     roundRectPath(TRAY.x + 4, TRAY.y + TRAY.h + 2, TRAY.w - 8, 3, 1.5);
     ctx.fill();
-    ctx.restore();
   }
 
   // vertical mini roller (for the feed mouth)
@@ -359,153 +363,108 @@
     ctx.fill();
   }
 
-  // --- the machine (X9 body) ---
+  // --- the machine (X9 press body) ---
   function drawMachine() {
     const t = time;
 
     // soft drop shadow
     ctx.fillStyle = 'rgba(28,32,38,0.16)';
     ctx.beginPath();
-    ctx.ellipse(MX + MW / 2, MY + MH + 10, MW * 0.46, 13, 0, 0, Math.PI * 2);
+    ctx.ellipse(MX + MW / 2, MY + MH + 12, MW * 0.46, 13, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // white central body
+    // white body (like an office digital press)
     const g = ctx.createLinearGradient(0, MY, 0, MY + MH);
-    g.addColorStop(0, '#fafbfd');
-    g.addColorStop(0.65, '#eef1f5');
-    g.addColorStop(1, '#e2e6ec');
+    g.addColorStop(0, '#fbfcfe');
+    g.addColorStop(0.6, '#f0f2f6');
+    g.addColorStop(1, '#e3e7ec');
     ctx.fillStyle = g;
-    roundRectPath(MX, MY, MW, MH, 24);
+    roundRectPath(MX, MY, MW, MH, 20);
     ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.10)';
     ctx.lineWidth = 1.5;
-    roundRectPath(MX + 0.75, MY + 0.75, MW - 1.5, MH - 1.5, 24);
+    roundRectPath(MX + 0.75, MY + 0.75, MW - 1.5, MH - 1.5, 20);
     ctx.stroke();
 
-    // dark gray frame: top rail, side pillars, base band (clipped to body)
+    // lid (top band, dark) + handle + hinges — clipped to the body
     ctx.save();
-    roundRectPath(MX, MY, MW, MH, 24);
+    roundRectPath(MX, MY, MW, MH, 20);
     ctx.clip();
-    ctx.fillStyle = '#2c3036';
-    ctx.fillRect(MX, MY, MW, 24);            // top rail
-    ctx.fillRect(MX, MY, 24, MH);            // left pillar
-    ctx.fillRect(MX + MW - 24, MY, 24, MH);  // right pillar
-    ctx.fillRect(MX, MY + MH - 62, MW, 62);  // base band
+
+    const lg = ctx.createLinearGradient(0, MY, 0, MY + 30);
+    lg.addColorStop(0, '#3a3f46');
+    lg.addColorStop(1, '#2b2f35');
+    ctx.fillStyle = lg;
+    ctx.fillRect(MX, MY, MW, 30);
+    // lid highlights + seam
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.fillRect(MX + 4, MY + 2, MW - 8, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(MX + 4, MY + 26, MW - 8, 2);
+    // handle (center) with grip ridges
+    ctx.fillStyle = '#4b5159';
+    roundRectPath(208, MY + 8, 36, 14, 5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    roundRectPath(213, MY + 12, 26, 5, 2.5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(216 + i * 6, MY + 13, 1, 3);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    roundRectPath(213, MY + 8, 26, 2, 1);
+    ctx.fill();
+    // hinges on the left edge
+    ctx.fillStyle = '#4b5159';
+    roundRectPath(MX + 8, MY + 20, 10, 8, 2);
+    ctx.fill();
+    roundRectPath(MX + 22, MY + 20, 10, 8, 2);
+    ctx.fill();
+    // lid rivets
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
+    ctx.beginPath(); ctx.arc(MX + 74, MY + 15, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(MX + MW - 74, MY + 15, 1.6, 0, Math.PI * 2); ctx.fill();
+
+    // small corner status dots (static)
+    led(MX + 40, MY + 15, 2.2, '#22d3ee');
+    led(MX + MW - 40, MY + 15, 2.2, '#34d399');
+
+    // paper-in indicator (under the lid, center) — plain line, no glow
+    ctx.fillStyle = 'rgba(34,211,238,0.55)';
+    roundRectPath(222, MY + 27, 62, 5, 2.5);
+    ctx.fill();
+
+    // thin dark base strip
+    ctx.fillStyle = '#2b2f35';
+    ctx.fillRect(MX, MY + MH - 22, MW, 22);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(MX + 4, MY + MH - 20, MW - 8, 2);
     ctx.restore();
 
-    // rail highlights
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    // panel seams + corner screws
+    ctx.strokeStyle = 'rgba(0,0,0,0.07)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(MX + 6, MY + 2);
-    ctx.lineTo(MX + MW - 6, MY + 2);
+    ctx.moveTo(296, 30); ctx.lineTo(296, 122);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(MX + 2, MY + 6);
-    ctx.lineTo(MX + 2, MY + MH - 6);
+    ctx.moveTo(MX + 8, 222); ctx.lineTo(MX + MW - 8, 222);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(MX + MW - 2, MY + 6);
-    ctx.lineTo(MX + MW - 2, MY + MH - 6);
-    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    const screws = [[26, 44], [422, 44], [26, 292], [422, 292]];
+    for (const [sx2, sy2] of screws) {
+      ctx.beginPath(); ctx.arc(sx2, sy2, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
 
-    // divider between top and middle sections
-    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-    ctx.beginPath();
-    ctx.moveTo(MX + 26, 112);
-    ctx.lineTo(MX + MW - 26, 112);
-    ctx.stroke();
-
-    // corner LEDs on the dark rail
-    led(MX + 34, MY + 14, 3, '#3b82f6', 0.55 + 0.45 * Math.sin(t * 2.8));
-    led(MX + MW - 34, MY + 14, 3, '#22d3ee', 0.55 + 0.45 * Math.sin(t * 2.8 + 1.6));
-
-    // status strip (center-top) — cyan, brightens while printing
-    const stripA = Math.min(0.16 + 0.12 * Math.sin(t * 2.2) + 0.55 * flash, 0.9);
-    ctx.save();
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = 'rgba(34,211,238,' + stripA.toFixed(3) + ')';
-    roundRectPath(215, 27, 80, 9, 4.5);
-    ctx.fill();
-    ctx.restore();
+    // control panel (top-right)
+    drawPanel();
 
     // top input tray
     drawTopTray();
 
-    // control panel (top-right)
-    const px = 310, py = 28, pw = 122, ph = 92;
-    const pg = ctx.createLinearGradient(0, py, 0, py + ph);
-    pg.addColorStop(0, '#d9dde3');
-    pg.addColorStop(1, '#c8cdd5');
-    ctx.fillStyle = pg;
-    roundRectPath(px, py, pw, ph, 12);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-    ctx.lineWidth = 1;
-    roundRectPath(px + 0.5, py + 0.5, pw - 1, ph - 1, 12);
-    ctx.stroke();
-
-    const sx = px + 12, sy = py + 10, sw = 98, sh = 36;
-    ctx.fillStyle = '#0c1116';
-    roundRectPath(sx, sy, sw, sh, 7);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(34,211,238,0.25)';
-    ctx.lineWidth = 1;
-    roundRectPath(sx + 0.5, sy + 0.5, sw - 1, sh - 1, 7);
-    ctx.stroke();
-    for (let i = 0; i < 6; i++) {
-      const bh = 6 + 15 * Math.abs(Math.sin(t * 2 + i * 0.9));
-      const bx = sx + 7 + i * 14;
-      ctx.save();
-      ctx.shadowColor = '#19e3ff';
-      ctx.shadowBlur = 7;
-      ctx.fillStyle = '#19e3ff';
-      ctx.fillRect(bx, sy + sh - 7 - bh, 8, bh);
-      ctx.restore();
-    }
-    ctx.fillStyle = 'rgba(34,211,238,0.35)';
-    ctx.fillRect(sx + 6, sy + sh - 6, sw - 12, 1.5);
-
-    led(sx + 8, sy + sh + 14, 3, '#3b82f6', 0.5 + 0.5 * Math.sin(t * 3));
-    led(sx + 36, sy + sh + 14, 3, '#22d3ee', 0.5 + 0.5 * Math.sin(t * 3 + 2));
-    led(sx + 64, sy + sh + 14, 3, '#34d399', 0.5 + 0.5 * Math.sin(t * 3 + 4));
-
-    ctx.fillStyle = '#262a30';
-    ctx.beginPath();
-    ctx.arc(sx + 20, sy + sh + 32, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(34,211,238,0.55)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(sx + 20, sy + sh + 32, 9, 0, Math.PI * 2);
-    ctx.stroke();
-    led(sx + 20, sy + sh + 32, 2.5, '#22d3ee', 0.4 + 0.3 * Math.sin(t * 4));
-
-    ctx.fillStyle = '#262a30';
-    ctx.beginPath();
-    ctx.arc(sx + 50, sy + sh + 32, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(59,130,246,0.65)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(sx + 50, sy + sh + 32, 6, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = '#3b82f6';
-    ctx.beginPath();
-    ctx.arc(sx + 50, sy + sh + 32, 2.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#262a30';
-    roundRectPath(sx + 68, sy + sh + 24, 20, 15, 4);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
-    ctx.lineWidth = 1.5;
-    roundRectPath(sx + 68, sy + sh + 24, 20, 15, 4);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    roundRectPath(sx + 68, sy + sh + 25, 20, 5, 3);
-    ctx.fill();
+    // print-head carriage window (the printer signature)
+    drawCarriage();
 
     // paper roll window (middle-left)
     drawRollCompartment();
@@ -515,72 +474,315 @@
 
     // vents (lower-left)
     for (let i = 0; i < 4; i++) {
-      const vx = 44, vy = 228 + i * 10;
-      ctx.fillStyle = 'rgba(28,32,38,0.10)';
-      roundRectPath(vx, vy, 96, 6, 3);
+      const vx = 48, vy = 232 + i * 9;
+      ctx.fillStyle = 'rgba(28,32,38,0.12)';
+      roundRectPath(vx, vy, 108, 5, 2.5);
       ctx.fill();
-      ctx.fillStyle = 'rgba(28,32,38,0.15)';
-      roundRectPath(vx, vy + 3, 96, 2, 1);
+      ctx.fillStyle = 'rgba(28,32,38,0.18)';
+      roundRectPath(vx, vy + 2.5, 108, 1.5, 0.8);
       ctx.fill();
     }
 
-    // status cluster (lower-right)
+    // status LEDs (lower-right)
     ctx.fillStyle = '#d5d9df';
-    roundRectPath(330, 226, 96, 30, 6);
+    roundRectPath(316, 230, 104, 30, 6);
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.6)';
     ctx.lineWidth = 1;
-    roundRectPath(330.5, 226.5, 95, 29, 6);
+    roundRectPath(316.5, 230.5, 103, 29, 6);
     ctx.stroke();
-    led(344, 241, 3, '#3b82f6', 0.5 + 0.5 * Math.sin(t * 3));
-    led(364, 241, 3, '#22d3ee', 0.5 + 0.5 * Math.sin(t * 3 + 2));
-    led(384, 241, 3, '#34d399', 0.5 + 0.5 * Math.sin(t * 3 + 4));
+    led(330, 245, 3, '#3b82f6');
+    led(350, 245, 3, '#22d3ee');
+    led(370, 245, 3, '#34d399');
     ctx.fillStyle = '#262a30';
-    roundRectPath(398, 234, 18, 14, 3);
+    roundRectPath(384, 238, 26, 14, 3);
     ctx.fill();
     ctx.strokeStyle = 'rgba(34,211,238,0.5)';
     ctx.lineWidth = 1;
-    roundRectPath(398, 234, 18, 14, 3);
+    roundRectPath(384, 238, 26, 14, 3);
     ctx.stroke();
 
-    // base band details (power button, brand plate, screws)
-    const by = MY + MH - 62;
-    const powY = by + 28;
+    // front access door (toner-style) with handle
+    ctx.fillStyle = '#e8ebf0';
+    roundRectPath(200, 232, 96, 40, 7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    roundRectPath(200.5, 232.5, 95, 39, 7);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    roundRectPath(204, 236, 88, 32, 5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    ctx.beginPath(); ctx.arc(208, 240, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(288, 240, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9aa1ab';
+    roundRectPath(242, 244, 12, 20, 3);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    roundRectPath(242.5, 244.5, 11, 19, 3);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    roundRectPath(246, 248, 4, 12, 2);
+    ctx.fill();
+
+    // Viprint red brand stripe
+    ctx.fillStyle = '#d4001f';
+    roundRectPath(MX + 8, 274, MW - 16, 5, 2.5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    roundRectPath(MX + 8, 274, MW - 16, 2, 1);
+    ctx.fill();
+
+    // brand plate with the red triangle mark (no text)
+    const baseY = MY + MH - 22; // 314
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRectPath(316, 282, 92, 24, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 1;
+    roundRectPath(316.5, 282.5, 91, 23, 5);
+    ctx.stroke();
+    ctx.fillStyle = '#d4001f';
+    ctx.beginPath();
+    ctx.moveTo(330, 291);
+    ctx.lineTo(322, 300);
+    ctx.lineTo(338, 300);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillRect(344, 291, 30, 2);
+    ctx.fillRect(344, 296, 22, 2);
+    ctx.fillRect(344, 301, 26, 2);
+
+    // power button (small, left)
     ctx.fillStyle = '#14171a';
     ctx.beginPath();
-    ctx.arc(MX + 56, powY, 9, 0, Math.PI * 2);
+    ctx.arc(70, 294, 8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(34,211,238,' + (0.5 + 0.4 * Math.sin(t * 2.5)).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(34,211,238,0.45)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(MX + 56, powY, 9, 0, Math.PI * 2);
+    ctx.arc(70, 294, 8, 0, Math.PI * 2);
     ctx.stroke();
-    led(MX + 56, powY, 2.3, '#22d3ee', 0.6);
+    led(70, 294, 2, '#22d3ee');
 
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    roundRectPath(MX + MW - 126, by + 16, 84, 24, 6);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    roundRectPath(MX + MW - 126.5, by + 16.5, 83, 23, 6);
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    const screws = [
-      [MX + 20, by + 10], [MX + MW - 20, by + 10],
-      [MX + 20, by + 50], [MX + MW - 20, by + 50]
-    ];
-    for (const [ssx, ssy] of screws) {
-      ctx.beginPath();
-      ctx.arc(ssx, ssy, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // feet
+    // feet with casters
     ctx.fillStyle = '#1c1e22';
     roundRectPath(40, MY + MH, 28, 8, 2);
     ctx.fill();
     roundRectPath(MX + MW - 68, MY + MH, 28, 8, 2);
     ctx.fill();
+    ctx.fillStyle = '#101216';
+    ctx.beginPath(); ctx.arc(54, MY + MH + 8, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(MX + MW - 54, MY + MH + 8, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.beginPath(); ctx.arc(52.5, MY + MH + 7, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(MX + MW - 55.5, MY + MH + 7, 2, 0, Math.PI * 2); ctx.fill();
+
+    // power cord (bottom-right)
+    ctx.strokeStyle = '#191c20';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(MX + MW - 6, MY + MH - 8);
+    ctx.quadraticCurveTo(MX + MW + 14, MY + MH - 4, MX + MW + 12, MY + MH + 22);
+    ctx.stroke();
+    ctx.fillStyle = '#191c20';
+    roundRectPath(MX + MW + 8, MY + MH + 22, 10, 6, 2);
+    ctx.fill();
+  }
+
+  // --- control panel (top-right): LCD + small buttons + print button ---
+  function drawPanel() {
+    const t = time;
+    const { x: px, y: py, w: pw, h: ph } = PANEL;
+
+    // panel body
+    const pg = ctx.createLinearGradient(0, py, 0, py + ph);
+    pg.addColorStop(0, '#dde1e7');
+    pg.addColorStop(1, '#c9ced6');
+    ctx.fillStyle = pg;
+    roundRectPath(px, py, pw, ph, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 1;
+    roundRectPath(px + 0.5, py + 0.5, pw - 1, ph - 1, 10);
+    ctx.stroke();
+
+    // LCD display: sheet icon + job meter
+    const sx = px + 10, sy = py + 8, sw = pw - 20, sh = 32;
+    ctx.fillStyle = '#0c1116';
+    roundRectPath(sx, sy, sw, sh, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(34,211,238,0.25)';
+    ctx.lineWidth = 1;
+    roundRectPath(sx + 0.5, sy + 0.5, sw - 1, sh - 1, 6);
+    ctx.stroke();
+    // sheet-of-paper glyph
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    roundRectPath(sx + 7, sy + 8, 9, 13, 2);
+    ctx.fill();
+    ctx.fillStyle = '#0c1116';
+    ctx.beginPath();
+    ctx.moveTo(sx + 13, sy + 8);
+    ctx.lineTo(sx + 16, sy + 11);
+    ctx.lineTo(sx + 13, sy + 11);
+    ctx.closePath();
+    ctx.fill();
+    // job progress bars
+    for (let i = 0; i < 5; i++) {
+      const bh = 7 + (i % 3) * 4;
+      const bx = sx + 30 + i * 13;
+      ctx.fillStyle = '#19e3ff';
+      ctx.fillRect(bx, sy + sh - 9 - bh, 8, bh);
+    }
+    ctx.fillStyle = 'rgba(34,211,238,0.35)';
+    ctx.fillRect(sx + 5, sy + sh - 5, sw - 10, 1.5);
+    // tiny round keys under the display
+    for (let i = 0; i < 4; i++) {
+      const kx = sx + 14 + i * 22;
+      ctx.fillStyle = '#262a30';
+      ctx.beginPath();
+      ctx.arc(kx, sy + sh + 9, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(kx, sy + sh + 9, 3.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // small square buttons (like a real printer's keypad)
+    const by = py + ph - 22;
+    for (let i = 0; i < 3; i++) {
+      const bx = px + 14 + i * 24;
+      ctx.fillStyle = '#262a30';
+      roundRectPath(bx, by, 12, 12, 3);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 1;
+      roundRectPath(bx + 0.5, by + 0.5, 11, 11, 3);
+      ctx.stroke();
+    }
+    led(px + 20, by + 6, 1.8, '#3b82f6');
+    led(px + 44, by + 6, 1.8, '#22d3ee');
+    led(px + 68, by + 6, 1.8, '#34d399');
+
+    // print button (small, lights up solid while printing)
+    const bx2 = px + pw - 34, by2 = py + ph - 26;
+    const on = pressT > 0 || flash > 0;
+    ctx.fillStyle = on ? '#1c2b2e' : '#262a30';
+    roundRectPath(bx2, by2, 22, 16, 5);
+    ctx.fill();
+    ctx.strokeStyle = on ? 'rgba(34,211,238,0.9)' : 'rgba(34,211,238,0.4)';
+    ctx.lineWidth = 2;
+    roundRectPath(bx2, by2, 22, 16, 5);
+    ctx.stroke();
+    led(bx2 + 11, by2 + 8, on ? 3 : 2.2, '#22d3ee');
+  }
+
+  // --- print-head carriage window (sliding CMYK head, the printer signature) ---
+  function drawCarriage() {
+    const t = time;
+    const { x, y, w, h } = CARRIAGE;
+
+    // dark window
+    const wg = ctx.createLinearGradient(0, y, 0, y + h);
+    wg.addColorStop(0, '#171c23');
+    wg.addColorStop(1, '#0d1116');
+    ctx.fillStyle = wg;
+    roundRectPath(x, y, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1.5;
+    roundRectPath(x + 0.75, y + 0.75, w - 1.5, h - 1.5, 8);
+    ctx.stroke();
+
+    // metal guide rail
+    const railY = y + h - 14;
+    const rg = ctx.createLinearGradient(0, railY, 0, railY + 4);
+    rg.addColorStop(0, '#5a6068');
+    rg.addColorStop(0.5, '#3a3f46');
+    rg.addColorStop(1, '#23272c');
+    ctx.fillStyle = rg;
+    roundRectPath(x + 6, railY, w - 12, 4, 2);
+    ctx.fill();
+
+    // ruler ticks under the rail
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 24; i++) {
+      const tx = x + 10 + i * 9.4;
+      ctx.beginPath();
+      ctx.moveTo(tx, railY + 5);
+      ctx.lineTo(tx, railY + (i % 4 === 0 ? 8 : 6.5));
+      ctx.stroke();
+    }
+
+    // head position — sweeps faster while printing
+    const speed = 0.9 + 7 * pressT + 2.5 * flash;
+    const headX = x + 30 + (w - 60) * (0.5 + 0.5 * Math.sin(t * speed));
+
+    // flex cable (ribbon) from the head to the right wall
+    ctx.strokeStyle = '#3a3f46';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(headX + 2, y + 12);
+    ctx.quadraticCurveTo(headX + (x + w - headX) * 0.5, y + 4, x + w - 6, y + 12);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(headX + 2, y + 13.5);
+    ctx.quadraticCurveTo(headX + (x + w - headX) * 0.5, y + 5.5, x + w - 6, y + 13.5);
+    ctx.stroke();
+
+    // CMYK ink trail behind the head while printing
+    const trail = 26 + 20 * Math.max(pressT, flash * 0.6);
+    const inkColors = ['#22d3ee', '#ec4899', '#facc15', '#2b2e33'];
+    ctx.save();
+    roundRectPath(x, y, w, h, 8);
+    ctx.clip();
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = inkColors[i];
+      ctx.globalAlpha = 0.35;   // plain ink, no glow
+      ctx.fillRect(headX - trail, y + 8 + i * 6, trail, 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // ink specks on the window glass
+    ctx.fillStyle = 'rgba(20,24,30,0.35)';
+    const specks = [[70, 82], [110, 88], [150, 80], [190, 90], [240, 84], [270, 92]];
+    for (const [px2, py2] of specks) {
+      ctx.beginPath(); ctx.arc(px2, py2, 1.1, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // head body
+    const hw = 40, hh = 18, hx = headX - hw / 2, hy = y + 8;
+    const hg = ctx.createLinearGradient(0, hy, 0, hy + hh);
+    hg.addColorStop(0, '#e8ebef');
+    hg.addColorStop(1, '#c3c8d0');
+    ctx.fillStyle = hg;
+    roundRectPath(hx, hy, hw, hh, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1;
+    roundRectPath(hx + 0.5, hy + 0.5, hw - 1, hh - 1, 5);
+    ctx.stroke();
+    // CMYK nozzles on the head's underside
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = inkColors[i];
+      ctx.beginPath();
+      ctx.arc(hx + 9 + i * 8, hy + hh - 3, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // head highlight + status LED
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    roundRectPath(hx + 3, hy + 2, hw - 6, 3, 1.5);
+    ctx.fill();
+    led(hx + hw - 6, hy + 5, 2, '#22d3ee');
   }
 
   // --- paper roll compartment (window, middle-left) ---
@@ -689,16 +891,28 @@
     roundRectPath(RW.x + RW.w - 8, cy - 6, 6, 12, 2);
     ctx.fill();
 
-    // cyan accent lights
-    led(RW.x + 6, RW.y + 8, 2.5, '#22d3ee', 0.5 + 0.4 * Math.sin(t * 2.2));
-    led(RW.x + RW.w - 6, RW.y + 8, 2.5, '#3b82f6', 0.5 + 0.4 * Math.sin(t * 2.2 + 1.4));
-    ctx.save();
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = 'rgba(34,211,238,' + (0.35 + 0.15 * Math.sin(t * 2.2)).toFixed(3) + ')';
+    // paper path (sheet leaving the roll toward the machine)
+    ctx.strokeStyle = '#eef1f5';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(RW.x + 48, cy - 8);
+    ctx.quadraticCurveTo(RW.x + 60, RW.y + 18, RW.x + 88, RW.y + 6);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(RW.x + 48, cy - 8);
+    ctx.quadraticCurveTo(RW.x + 60, RW.y + 18, RW.x + 88, RW.y + 6);
+    ctx.stroke();
+
+    // small static accent dots
+    led(RW.x + 6, RW.y + 8, 2.5, '#22d3ee');
+    led(RW.x + RW.w - 6, RW.y + 8, 2.5, '#3b82f6');
+    ctx.fillStyle = 'rgba(28,32,38,0.25)';
     roundRectPath(RW.x + 8, RW.y + RW.h - 8, RW.w - 16, 3, 1.5);
     ctx.fill();
-    ctx.restore();
 
     // glass window frame + reflection
     ctx.strokeStyle = '#c9ced6';
@@ -720,12 +934,26 @@
     ctx.lineTo(RW.x + 12, RW.y + 28);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(RW.x + 96, RW.y + 4);
+    ctx.lineTo(RW.x + 58, RW.y + RW.h - 4);
+    ctx.stroke();
     ctx.restore();
+
+    // window latch on the frame
+    ctx.fillStyle = '#7d858f';
+    roundRectPath(RW.x + RW.w / 2 - 8, RW.y + RW.h - 3, 16, 6, 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    roundRectPath(RW.x + RW.w / 2 - 7.5, RW.y + RW.h - 2.5, 15, 5, 2);
+    ctx.stroke();
   }
 
   // --- CMYK ink cartridge bay ---
   function drawInkBay() {
-    const t = time;
     const cw = 26, gap = 4, cH = 78;
     const cBase = IB.y + IB.h - 2;
     const startX = IB.x + (IB.w - (INKS.length * cw + (INKS.length - 1) * gap)) / 2;
@@ -761,6 +989,10 @@
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
       roundRectPath(cx, top, cw, 2, 1);
       ctx.fill();
+      // cap grip ridges
+      ctx.fillStyle = 'rgba(255,255,255,0.20)';
+      ctx.fillRect(cx + 2, top + 2, cw - 4, 1);
+      ctx.fillRect(cx + 2, top + 4, cw - 4, 1);
 
       const bg = ctx.createLinearGradient(cx, 0, cx + cw, 0);
       bg.addColorStop(0, '#f2f4f7');
@@ -780,8 +1012,19 @@
       ctx.fillStyle = ink.ink;
       roundRectPath(wx + 1, wy + wh - 14, ww - 2, 13, 1.5);
       ctx.fill();
+      // level tick marks on the window
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(wx, wy + 6); ctx.lineTo(wx + ww, wy + 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(wx, wy + 12); ctx.lineTo(wx + ww, wy + 12); ctx.stroke();
 
-      led(cx + cw / 2, cBase - 3, 2, ink.led, 0.5 + 0.4 * Math.sin(t * 3 + i * 1.2));
+      // gold chip contacts at the base
+      ctx.fillStyle = '#d9a441';
+      ctx.fillRect(cx + 5, cBase - 4, 4, 2);
+      ctx.fillRect(cx + 12, cBase - 4, 4, 2);
+      ctx.fillRect(cx + 19, cBase - 4, 4, 2);
+
+      led(cx + cw / 2, cBase - 3, 2, ink.led);
     }
   }
 
@@ -823,139 +1066,6 @@
 
     drawRoller(SLOT.x + 5, SLOT.y + 1.5, SLOT.w - 10, 5, t);
     drawRoller(SLOT.x + 5, SLOT.y + SLOT.h - 6.5, SLOT.w - 10, 5, t + 1.4);
-
-    if (flash > 0) {
-      ctx.save();
-      ctx.shadowColor = '#22d3ee';
-      ctx.shadowBlur = 14;
-      ctx.strokeStyle = 'rgba(34,211,238,' + (0.7 * flash).toFixed(3) + ')';
-      ctx.lineWidth = 2.5;
-      roundRectPath(SLOT.x - 2, SLOT.y - 2, SLOT.w + 4, SLOT.h + 4, 10);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  // --- the big industrial button ---
-  function drawButton() {
-    const t = time;
-    const { cx, cy, mountR, bezelR, ringR, capR } = BTN;
-    const press = pressT;
-    const capY = cy + press * 5;
-    const ringA = Math.min(0.55 + 0.30 * Math.sin(t * 2.4) + 0.6 * press, 1);
-
-    const mg = ctx.createRadialGradient(cx - 25, cy - 28, 10, cx, cy, mountR);
-    mg.addColorStop(0, '#4a4e55');
-    mg.addColorStop(0.75, '#2c2f34');
-    mg.addColorStop(1, '#1d2024');
-    ctx.fillStyle = mg;
-    ctx.beginPath();
-    ctx.arc(cx, cy, mountR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(cx, cy, mountR - 5, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, mountR - 9, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(cx, cy, mountR - 1.5, Math.PI * 1.05, Math.PI * 1.75); ctx.stroke();
-
-    ctx.fillStyle = '#111419';
-    ctx.beginPath();
-    ctx.arc(cx, cy, bezelR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, bezelR, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.save();
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 14 + 22 * press;
-    ctx.strokeStyle = 'rgba(34,211,238,' + ringA.toFixed(3) + ')';
-    ctx.lineWidth = 9;
-    ctx.beginPath();
-    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 6;
-    ctx.strokeStyle = 'rgba(190,245,255,' + (0.5 + 0.4 * press).toFixed(3) + ')';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, ringR - 4.5, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(cx, capY);
-    const cg = ctx.createLinearGradient(-capR, -capR, capR, capR);
-    cg.addColorStop(0, '#767c84');
-    cg.addColorStop(0.45, '#45494f');
-    cg.addColorStop(1, '#24272c');
-    ctx.fillStyle = cg;
-    ctx.beginPath();
-    ctx.arc(0, 0, capR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, capR - 1, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, capR - 2, 0, Math.PI * 2);
-    ctx.clip();
-    const sg2 = ctx.createLinearGradient(-capR, -capR, capR, capR);
-    sg2.addColorStop(0, 'rgba(255,255,255,0.30)');
-    sg2.addColorStop(0.35, 'rgba(255,255,255,0.05)');
-    sg2.addColorStop(0.62, 'rgba(0,0,0,0.05)');
-    sg2.addColorStop(1, 'rgba(0,0,0,0.22)');
-    ctx.fillStyle = sg2;
-    ctx.fillRect(-capR, -capR, capR * 2, capR * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.40)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, capR - 5, Math.PI * 1.05, Math.PI * 1.7);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.arc(0, 0, capR - 6, Math.PI * -0.15, Math.PI * 0.45);
-    ctx.stroke();
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(0,0,0,0.14)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, capR * 0.74, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-    ctx.beginPath();
-    ctx.arc(0, 0, capR * 0.74 + 1.5, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    for (let i = 0; i < 4; i++) {
-      const a = Math.PI / 4 + i * Math.PI / 2;
-      const rx = Math.cos(a) * capR * 0.8;
-      const ry = Math.sin(a) * capR * 0.8;
-      ctx.beginPath();
-      ctx.arc(rx, ry, 2.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    roundRectPath(-9, -3, 18, 6, 3); ctx.fill();
-    roundRectPath(-3, -9, 6, 18, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    roundRectPath(-9, -4, 18, 2, 1); ctx.fill();
-    roundRectPath(-4, -9, 2, 18, 1); ctx.fill();
-    ctx.restore();
-
-    for (const rp of ripples) {
-      ctx.strokeStyle = 'rgba(34,211,238,' + rp.a.toFixed(3) + ')';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, rp.r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
   }
 
   function drawSheet(x, y, w, h, rot, wobble, pat) {
@@ -992,40 +1102,77 @@
     ctx.restore();
   }
 
-  // --- output tray + pile ---
+  // --- output catch tray + pile ---
   function drawOutputTray() {
-    ctx.fillStyle = '#e6e9ee';
+    // dark mouth above the tray
+    ctx.fillStyle = 'rgba(20,24,30,0.35)';
+    roundRectPath(TRAY_OUT.x, TRAY_OUT.y - 6, TRAY_OUT.w, 8, 3);
+    ctx.fill();
+    // tray ledge
+    const tg = ctx.createLinearGradient(0, TRAY_OUT.y, 0, TRAY_OUT.y + TRAY_OUT.h);
+    tg.addColorStop(0, '#eef1f5');
+    tg.addColorStop(1, '#d6dbe2');
+    ctx.fillStyle = tg;
     roundRectPath(TRAY_OUT.x, TRAY_OUT.y, TRAY_OUT.w, TRAY_OUT.h, 6);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.14)';
     ctx.lineWidth = 1;
     roundRectPath(TRAY_OUT.x + 0.5, TRAY_OUT.y + 0.5, TRAY_OUT.w - 1, TRAY_OUT.h - 1, 6);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    roundRectPath(TRAY_OUT.x, TRAY_OUT.y, TRAY_OUT.w, 5, 3);
+    // backstop band
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    roundRectPath(TRAY_OUT.x + 2, TRAY_OUT.y, TRAY_OUT.w - 4, 4, 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    // ribbed floor
+    ctx.strokeStyle = 'rgba(0,0,0,0.07)';
     ctx.lineWidth = 1;
-    roundRectPath(TRAY_OUT.x, TRAY_OUT.y + TRAY_OUT.h - 2, TRAY_OUT.w, 2, 1);
+    for (let i = 0; i < 11; i++) {
+      const rx = TRAY_OUT.x + 12 + i * (TRAY_OUT.w - 24) / 10;
+      ctx.beginPath();
+      ctx.moveTo(rx, TRAY_OUT.y + 5);
+      ctx.lineTo(rx, TRAY_OUT.y + TRAY_OUT.h - 3);
+      ctx.stroke();
+    }
+    // side walls
+    ctx.fillStyle = '#c3c9d2';
+    roundRectPath(TRAY_OUT.x - 5, TRAY_OUT.y - 2, 8, TRAY_OUT.h + 4, 2);
+    ctx.fill();
+    roundRectPath(TRAY_OUT.x + TRAY_OUT.w - 3, TRAY_OUT.y - 2, 8, TRAY_OUT.h + 4, 2);
+    ctx.fill();
+    // front lip highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(TRAY_OUT.x + 4, TRAY_OUT.y + TRAY_OUT.h - 2.5);
+    ctx.lineTo(TRAY_OUT.x + TRAY_OUT.w - 4, TRAY_OUT.y + TRAY_OUT.h - 2.5);
     ctx.stroke();
   }
 
   function drawPile() {
     drawOutputTray();
+    // a couple of resting sheets always visible in the tray
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(TRAY_OUT.x + 26, PILE_BASE + 2, TRAY_OUT.w - 52, 3);
+    ctx.fillStyle = PAPER_COLORS[3];
+    ctx.fillRect(TRAY_OUT.x + 26, PILE_BASE + 2, 5, 3);
+    ctx.fillStyle = '#f4f6f8';
+    ctx.fillRect(TRAY_OUT.x + 30, PILE_BASE + 5, TRAY_OUT.w - 60, 3);
+    ctx.fillStyle = PAPER_COLORS[0];
+    ctx.fillRect(TRAY_OUT.x + 30, PILE_BASE + 5, 5, 3);
     if (pileCount === 0) return;
-    ctx.fillStyle = 'rgba(28,32,38,0.10)';
-    roundRectPath(58, PILE_BASE - pileCount * 3 - 2, 116, pileCount * 3 + 6, 6);
+    ctx.fillStyle = 'rgba(28,32,38,0.12)';
+    roundRectPath(TRAY_OUT.x + 16, PILE_BASE - pileCount * 3 - 2, TRAY_OUT.w - 32, pileCount * 3 + 6, 6);
     ctx.fill();
     for (let i = 0; i < pileCount; i++) {
       const y = PILE_BASE - i * 3;
-      const x = 62 + Math.sin(i * 1.7) * 3;
+      const x = TRAY_OUT.x + 22 + Math.sin(i * 1.7) * 3;
       ctx.fillStyle = i % 2 ? '#f4f6f8' : '#ffffff';
-      ctx.fillRect(x, y, 108, 3);
+      ctx.fillRect(x, y, TRAY_OUT.w - 44, 3);
       ctx.fillStyle = PAPER_COLORS[i % PAPER_COLORS.length];
       ctx.fillRect(x, y, 5, 3);
       ctx.strokeStyle = 'rgba(0,0,0,0.06)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(x + 0.5, y + 0.5, 107, 2);
+      ctx.strokeRect(x + 0.5, y + 0.5, TRAY_OUT.w - 45, 2);
     }
   }
 
@@ -1042,8 +1189,6 @@
     }
 
     drawSlot();
-
-    drawButton();
 
     // falling papers (drift into the output tray)
     for (const p of papers) {
@@ -1152,7 +1297,6 @@
       feedLv = 0;
       papers = [];
       bits = [];
-      ripples = [];
       pileCount = 0;
       save();
       updateUI();
@@ -1176,7 +1320,4 @@
   updateUI();
   loop();
   setInterval(tick, 1000);
-
-  // marker so the game's live status is visible in the page title
-  document.title = 'Viprint Press — Quality Printing Solutions';
 })();
